@@ -1,0 +1,27 @@
+{
+  "name": "project",
+  "version": "1.0.0",
+  "description": "항해99 10기 3주차 개인과제",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jn33-dev/w3-personal-project.git"
+  },
+  "author": "yena choi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jn33-dev/w3-personal-project/issues"
+  },
+  "homepage": "https://github.com/jn33-dev/w3-personal-project#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemon": "^2.0.20"
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "supertest": "^6.3.1"
+  }
+}
