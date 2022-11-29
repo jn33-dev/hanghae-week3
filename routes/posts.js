@@ -2,14 +2,28 @@ const express = require("express");
 const router = express.Router();
 const Posts = require("../schemas/post");
 
+/**
+ * 검증 함수 적용 예정
+ * 검증 함수를 router 안에 적용하면, Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client가 뜸
+ * 즉, res 값이 이미 전달 됐는데(검증 함수 내의 res), 또 다른 res가 전달됨(본문 안 catch문의 res)
+ */
+function isBody(req, res) {
+  console.log("isBody() 검증 시작");
+  if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
+    console.log("!bodyArr.length");
+    return res
+      .status(400)
+      .send({ message: "데이터 형식이 올바르지 않습니다." });
+  } else return true;
+}
+
 // 1.게시글 작성 api
 router.post("/", async (req, res) => {
   try {
     const { user, password, title, content } = req.body;
-    const date = new Date().toString();
-
+    const createdAt = new Date().toString();
     await Posts.create({
-      date,
+      createdAt,
       user,
       password,
       title,
@@ -27,11 +41,10 @@ router.get("/", async (req, res) => {
 
   let posts = [];
   for (let post of data) {
-    const { _id, date, user, title } = post;
-    posts.push({ postId: _id, user, title, createdAt: date });
+    const { _id, createdAt, user, title } = post;
+    posts.push({ postId: _id, user, title, createdAt });
   }
 
-  // date 기준으로 posting정렬
   posts.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   res.json({ data: posts });
 });
@@ -40,12 +53,11 @@ router.get("/", async (req, res) => {
 router.get("/:_postId", async (req, res) => {
   try {
     const { _postId } = req.params;
-    // _id 값이 일치하는 게시물이 없으면 .findOne()에서 error를 던짐
-    const { _id, user, title, content, date } = await Posts.findOne({
+    const { _id, user, title, content, createdAt } = await Posts.findOne({
       _id: _postId,
     });
 
-    res.json({ data: { postId: _id, user, title, content, createdAt: date } });
+    res.json({ data: { postId: _id, user, title, content, createdAt } });
   } catch (err) {
     res.status(400).send({ message: "데이터 형식이 올바르지 않습니다." });
   }
@@ -54,41 +66,19 @@ router.get("/:_postId", async (req, res) => {
 // 4.게시글 수정 api (postId, password, title, content)
 // ???게시글의 일부만 수정하므로, patch를 사용하는 것이 맞는 것 아닌지??
 router.put("/:_postId", async (req, res) => {
-  try {
-    const { _postId } = req.params;
-    const { password, title, content } = req.body;
-    if (_postId === undefined || password === undefined) {
-      // !!에러가 나면, 자동으로 400번으로 들어오는 듯...
-      throw new Error("데이터 형식이 올바르지 않습니다.");
-    } else {
-      try {
-        await Posts.updateOne(
-          { _id: _postId, password: password },
-          { $set: { title, content } }
-        );
-        res.send({ message: "게시글을 수정하였습니다." });
-      } catch (err) {
-        res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
-      }
-    }
-  } catch (err) {
-    res.status(400).send({ message: "데이터 형식이 올바르지 않습니다." });
-  }
-});
-
-// 5.게시글 삭제 api (postId, password)
-router.delete("/:_postId", async (req, res) => {
-  //???uri에 _postId 값을 전달하지 않으면, 아예 404 에러가 떠버림. req.param에 아무런 값을 전달받지 않았다는 사실을 확인하는 방법??
-
-  const { _postId } = req.params;
-  const { password } = req.body;
-  console.log(_postId, password);
-  if (_postId === undefined || password === undefined) {
-    // !!에러가 나면, 자동으로 400번으로 들어오는 듯...
-    throw new Error("데이터 형식이 올바르지 않습니다.");
+  if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
+    console.log("!bodyArr.length");
+    return res
+      .status(400)
+      .send({ message: "데이터 형식이 올바르지 않습니다." });
   } else {
     try {
-      await Posts.deleteOne({ _id: _postId, password: password });
+      const { _postId } = req.params;
+      const { password, title, content } = req.body;
+      await Posts.updateOne(
+        { _id: _postId, password: password },
+        { $set: { title, content } }
+      );
       res.send({ message: "게시글을 수정하였습니다." });
     } catch (err) {
       res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
@@ -96,14 +86,22 @@ router.delete("/:_postId", async (req, res) => {
   }
 });
 
-router.get("/test/:_postId", async (req, res) => {
-  try {
-    const { _postId } = req.params;
-    console.log(_postId, "에러 던지나??");
-    const data = await Posts.findOne({ _id: _postId });
-    console.log(data);
-  } catch (err) {
-    console.error(`Error: ${err.message}`);
+// 5.게시글 삭제 api (postId, password)
+router.delete("/:_postId", async (req, res) => {
+  if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
+    console.log("!bodyArr.length");
+    return res
+      .status(400)
+      .send({ message: "데이터 형식이 올바르지 않습니다." });
+  } else {
+    try {
+      const { _postId } = req.params;
+      const { password } = req.body;
+      await Posts.deleteOne({ _id: _postId, password: password });
+      res.send({ message: "게시글을 삭제하였습니다." });
+    } catch (err) {
+      res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
+    }
   }
 });
 

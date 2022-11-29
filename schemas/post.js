@@ -4,6 +4,7 @@ const postsSchema = new mongoose.Schema({
   date: {
     type: String,
     required: true,
+    unique: true,
   },
   user: {
     type: String,
@@ -15,9 +16,11 @@ const postsSchema = new mongoose.Schema({
   },
   title: {
     type: String,
+    required: true,
   },
   content: {
     type: String,
+    required: true,
   },
 });
 

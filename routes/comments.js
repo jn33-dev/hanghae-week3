@@ -4,11 +4,19 @@ const Comments = require("../schemas/comment");
 const Posts = require("../schemas/post");
 
 /**
- * 추가 작업 할 것
- * req.params와 req.body 검증하는 함수 하나 짜고, 공통으로 사용
+ * 검증함수 적용 예정
+ * Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client 에러 해결 후, 검증함수를 미들웨어로 만들어서, posts와 comments에 한방에 적용
  */
 
-function isParams()
+function isBody(req, res) {
+  console.log("isBody() 검증 시작");
+  if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
+    console.log("!bodyArr.length");
+    return res
+      .status(400)
+      .send({ message: "데이터 형식이 올바르지 않습니다." });
+  } else return true;
+}
 
 // 1.댓글 작성 api (postId, user, password, content, createdAt)
 router.post("/:_postId", async (req, res) => {
@@ -36,6 +44,7 @@ router.post("/:_postId", async (req, res) => {
 // 2. 댓글 목록 조회
 router.get("/:_postId", async (req, res) => {
   const { _postId } = req.params;
+  //??? id 조건에 맞는 데이터가 없어도 error를 던지지 않고 빈 배열을 반환???
   const data = await Comments.find({ postId: _postId });
   if (!data.length) {
     res.status(400).send({ message: "데이터 형식이 올바르지 않습니다." });
