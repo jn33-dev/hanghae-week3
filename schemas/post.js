@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
 
 const postsSchema = new mongoose.Schema({
-  date: {
-    type: String,
+  createdAt: {
+    type: Date,
     required: true,
-    unique: true,
   },
   user: {
     type: String,
