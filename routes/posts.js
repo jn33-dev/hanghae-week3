@@ -73,14 +73,18 @@ router.put("/:_postId", async (req, res) => {
     await isBody(req.body);
     const { _postId } = req.params;
     const { password, title, content } = req.body;
-    await Posts.updateOne(
+    const data = await Posts.findOneAndUpdate(
       { _id: _postId, password: password },
       { $set: { title, content } }
     );
+    if (data === null)
+      throw new Error("return null: 게시글 조회에 실패하였습니다.");
     res.send({ message: "게시글을 수정하였습니다." });
   } catch (err) {
     if (err.name === SyntaxError)
       res.status(400).send({ message: err.message });
+    else if (err.message == "return null: 게시글 조회에 실패하였습니다.")
+      res.status(404).send({ message: err.message });
     else res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
   }
 });
