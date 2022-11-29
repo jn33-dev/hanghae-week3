@@ -42,20 +42,19 @@ router.post("/:_postId", async (req, res) => {
 router.get("/:_postId", async (req, res) => {
   try {
     const { _postId } = req.params;
-    //??? id 조건에 맞는 데이터가 없어도 error를 던지지 않고 빈 배열을 반환???
     const data = await Comments.find({ postId: _postId });
-    // if (!data.length) {
-    //   res.status(400).send({ message: "데이터 형식이 올바르지 않습니다." });
-    // } else {
-    comments = [];
-    for (let c of data) {
-      console.log("c:", c);
-      const { _id, user, content, createdAt } = c;
-      comments.push({ commentId: _id, user, content, createdAt });
+    if (!data.length) {
+      res.status(400).send({ message: "데이터 형식이 올바르지 않습니다." });
+    } else {
+      comments = [];
+      for (let c of data) {
+        console.log("c:", c);
+        const { _id, user, content, createdAt } = c;
+        comments.push({ commentId: _id, user, content, createdAt });
+      }
+      comments.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+      return res.json({ data: comments });
     }
-    comments.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
-    return res.json({ data: comments });
-    // }
   } catch (err) {}
 });
 
