@@ -1,8 +1,11 @@
+require("dotenv").config();
+const mongodb_uri = process.env.MONGODB;
+
 const mongoose = require("mongoose");
 
 const connect = () => {
   mongoose
-    .connect("mongodb://127.0.0.1/w3-personal", { useNewUrlParser: true })
+    .connect(mongodb_uri, { useNewUrlParser: true })
     .catch((err) => console.log("몽고디비 연결 에러", err));
 };
 

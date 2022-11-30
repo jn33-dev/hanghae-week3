@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const postsSchema = new mongoose.Schema({
   createdAt: {
-    type: Date,
+    type: String,
     required: true,
   },
   user: {
