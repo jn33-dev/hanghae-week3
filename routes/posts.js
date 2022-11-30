@@ -11,6 +11,14 @@ class BodyError {
   }
 }
 
+class IdentifyError {
+  constructor() {
+    this.name = "IdentifyError";
+    this.message = "게시글 조회에 실패했습니다.";
+    this.status = 404;
+  }
+}
+
 function isBody(req, res) {
   if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
     throw new BodyError();
@@ -34,9 +42,7 @@ router.post("/", async (req, res) => {
     return res.json({ message: "게시글을 생성하였습니다." });
   } catch (err) {
     console.log(err);
-    return res
-      .status(400)
-      .send({ message: "데이터 형식이 올바르지 않습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -53,6 +59,7 @@ router.get("/", async (req, res) => {
     return res.json({ data: posts });
   } catch (err) {
     console.log(err);
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -60,13 +67,14 @@ router.get("/", async (req, res) => {
 router.get("/:_postId", async (req, res) => {
   try {
     const { _postId } = req.params;
-    const { _id, user, title, content, createdAt } = await Posts.findOne({
+    const data = await Posts.findOne({
       _id: _postId,
     });
+    if (data === null) throw new IdentifyError();
+    const { _id, user, title, content, createdAt } = data;
 
     // 해당 게시글 댓글 조회
     const comment = await Comments.find({ postId: _postId });
-    // postId에 해당하는 post가 있으므로, 해당 post에 comments가 없는 경우, 빈 배열 return
     comments = [];
     if (comment.length) {
       for (let c of comment) {
@@ -85,9 +93,9 @@ router.get("/:_postId", async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    return res
-      .status(400)
-      .send({ message: "데이터 형식이 올바르지 않습니다." });
+    if (!err.status) {
+      return res.status(400).send({ message: err.message });
+    } else return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -101,14 +109,11 @@ router.put("/:_postId", async (req, res) => {
       { _id: _postId, password },
       { $set: { title, content } }
     );
-    if (data === null) throw new Error("입력값에 맞는 데이터가 없음");
+    if (data === null) throw new IdentifyError();
     return res.send({ message: "게시글을 수정하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -122,14 +127,11 @@ router.delete("/:_postId", async (req, res) => {
       _id: _postId,
       password: password,
     });
-    if (data === null) throw new Error("입력값에 맞는 데이터가 없음");
+    if (data === null) throw new IdentifyError();
     return res.send({ message: "게시글을 삭제하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 

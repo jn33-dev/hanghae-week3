@@ -11,9 +11,33 @@ class BodyError {
   }
 }
 
+class ContentError {
+  constructor() {
+    this.name = "ContentError";
+    this.message = "댓글 내용을 입력해주세요";
+    this.status = 400;
+  }
+}
+
+class CommentError {
+  constructor() {
+    this.name = "CommentError";
+    this.message = "댓글 조회에 실패했습니다.";
+    this.status = 404;
+  }
+}
+
+class IdentifierError {
+  constructor() {
+    this.name = "IdentifierError";
+    this.message = "게시글 조회에 실패했습니다.";
+    this.status = 404;
+  }
+}
+
 function isBody(req, res) {
   if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
-    throw new BodyError();
+    throw BodyError();
   }
   return;
 }
@@ -23,14 +47,11 @@ router.post("/:_postId", async (req, res) => {
   try {
     const { _postId } = req.params;
     const { user, password, content } = req.body;
-    if (!content || !content.length)
-      return res.status(400).send({ message: "댓글 내용을 입력해주세요." });
+    if (!content || !content.length) throw new ContentError();
     await isBody(req, res);
     const post = await Posts.findOne({ _id: _postId });
     if (post === null) {
-      return res
-        .status(404)
-        .send({ message: "유효한 게시글을 찾을 수 없습니다." });
+      throw IdentifierError();
     }
     const createdAt = new Date().toISOString();
     await Comments.create({
@@ -43,12 +64,7 @@ router.post("/:_postId", async (req, res) => {
     return res.json({ message: "댓글을  생성하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res
-        .status(400)
-        .send({ message: "데이터 형식이 올바르지 않습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -56,20 +72,10 @@ router.post("/:_postId", async (req, res) => {
 router.get("/:_postId", async (req, res) => {
   try {
     const { _postId } = req.params;
-    //??_postId로 Post data에서 포스트가 있는지 먼저 검증을 하는게 좋을지??
     const post = await Posts.findOne({ _id: _postId });
-    if (post === null) {
-      return res
-        .status(404)
-        .send({ message: "유효한 게시글을 찾을 수 없습니다." });
-    }
+    if (post === null) throw IdentifierError();
     const data = await Comments.find({ postId: _postId });
-    // postId에 해당하는 post가 있으므로, 해당 post에 comments가 없는 경우, 빈 배열 return
-    if (!data.length) {
-      return res
-        .status(404)
-        .send({ message: "입력하신 postId로 유효한 댓글을 찾을 수 없습니다." });
-    }
+    if (!data.length) throw CommentError();
 
     comments = [];
     for (let c of data) {
@@ -80,9 +86,7 @@ router.get("/:_postId", async (req, res) => {
     return res.json({ data: comments });
   } catch (err) {
     console.log(err);
-    return res
-      .status(400)
-      .send({ message: "데이터 형식이 올바르지 않습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -91,22 +95,18 @@ router.put("/:_commentId", async (req, res) => {
   try {
     const { _commentId } = req.params;
     const { password, content } = req.body;
-    if (!content || !content.length)
-      return res.status(400).send({ message: "댓글 내용을 입력해주세요." });
+    if (!content || !content.length) throw ContentError;
     await isBody(req, res);
 
     const data = await Comments.findOneAndUpdate(
       { _id: _commentId, password },
       { $set: { content } }
     );
-    if (data === null) throw new Error("입력값에 맞는 데이터가 없음");
+    if (data === null) throw CommentError;
     return res.send({ message: "댓글을 성공적으로 수정하였습니다!" });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res.status(404).send({ message: "댓글 조회에 실패하였습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -121,14 +121,11 @@ router.delete("/:_commentId", async (req, res) => {
       _id: _commentId,
       password: password,
     });
-    if (data === null) throw new Error("입력값에 맞는 데이터가 없음");
+    if (data === null) throw CommentError;
     return res.send({ message: "댓글을 성공적으로 삭제하였습니다!" });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res.status(404).send({ message: "댓글 조회에 실패하였습니다." });
+    return res.status(err.status).send({ message: err.message });
   }
 });
 
