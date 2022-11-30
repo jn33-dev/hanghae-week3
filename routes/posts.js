@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Posts = require("../schemas/post");
+const Comments = require("../schemas/comment");
 
 function isBody(req, res) {
   if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
@@ -55,7 +56,26 @@ router.get("/:_postId", async (req, res) => {
     const { _id, user, title, content, createdAt } = await Posts.findOne({
       _id: _postId,
     });
-    return res.json({ data: { postId: _id, user, title, content, createdAt } });
+
+    // 해당 게시글 댓글 조회
+    const comment = await Comments.find({ postId: _postId });
+    // postId에 해당하는 post가 있으므로, 해당 post에 comments가 없는 경우, 빈 배열 return
+    comments = [];
+    if (comment.length) {
+      for (let c of comment) {
+        const { _id, user, content, createdAt } = c;
+        comments.push({ commentId: _id, user, content, createdAt });
+      }
+      comments.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+    } else {
+      comments.push("유효한 댓글 데이터가 없습니다.");
+    }
+
+    // 게시글 상세조회 + 댓글 목록을 res로 쏴주기
+    return res.json({
+      data: { postId: _id, user, title, content, createdAt },
+      comments,
+    });
   } catch (err) {
     console.log(err);
     return res
@@ -65,7 +85,6 @@ router.get("/:_postId", async (req, res) => {
 });
 
 // 4.게시글 수정 api (postId, password, title, content)
-// ???게시글의 일부만 수정하므로, patch를 사용하는 것이 맞는 것 아닌지??
 router.put("/:_postId", async (req, res) => {
   try {
     await isBody(req, res);
