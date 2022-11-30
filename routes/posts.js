@@ -3,11 +3,17 @@ const router = express.Router();
 const Posts = require("../schemas/post");
 const Comments = require("../schemas/comment");
 
+class BodyError {
+  constructor() {
+    this.name = "BodyError";
+    this.message = "데이터 형식이 올바르지 않습니다.";
+    this.status = 400;
+  }
+}
+
 function isBody(req, res) {
   if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
-    return res
-      .status(400)
-      .send({ message: "데이터 형식이 올바르지 않습니다." });
+    throw new BodyError();
   }
   return;
 }
@@ -98,7 +104,10 @@ router.put("/:_postId", async (req, res) => {
     return res.send({ message: "게시글을 수정하였습니다." });
   } catch (err) {
     console.log(err);
-    return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
+    if (err === BodyError) {
+      return res.status(err.status).send({ message: err.message });
+    } else
+      return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
   }
 });
 
@@ -116,7 +125,10 @@ router.delete("/:_postId", async (req, res) => {
     return res.send({ message: "게시글을 삭제하였습니다." });
   } catch (err) {
     console.log(err);
-    return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
+    if (err === BodyError) {
+      return res.status(err.status).send({ message: err.message });
+    } else
+      return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
   }
 });
 
