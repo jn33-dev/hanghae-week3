@@ -33,6 +33,7 @@ router.post("/", async (req, res) => {
     });
     return res.json({ message: "게시글을 생성하였습니다." });
   } catch (err) {
+    console.log(err);
     return res
       .status(400)
       .send({ message: "데이터 형식이 올바르지 않습니다." });
@@ -104,7 +105,7 @@ router.put("/:_postId", async (req, res) => {
     return res.send({ message: "게시글을 수정하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err === BodyError) {
+    if (err.name === "BodyError") {
       return res.status(err.status).send({ message: err.message });
     } else
       return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });
@@ -125,7 +126,7 @@ router.delete("/:_postId", async (req, res) => {
     return res.send({ message: "게시글을 삭제하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err === BodyError) {
+    if (err.name === "BodyError") {
       return res.status(err.status).send({ message: err.message });
     } else
       return res.status(404).send({ message: "게시글 조회에 실패하였습니다." });

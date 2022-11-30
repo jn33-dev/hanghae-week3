@@ -43,7 +43,7 @@ router.post("/:_postId", async (req, res) => {
     return res.json({ message: "댓글을  생성하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err === BodyError) {
+    if (err.name === "BodyError") {
       return res.status(err.status).send({ message: err.message });
     } else
       return res
@@ -103,7 +103,7 @@ router.put("/:_commentId", async (req, res) => {
     return res.send({ message: "댓글을 성공적으로 수정하였습니다!" });
   } catch (err) {
     console.log(err);
-    if (err === BodyError) {
+    if (err.name === "BodyError") {
       return res.status(err.status).send({ message: err.message });
     } else
       return res.status(404).send({ message: "댓글 조회에 실패하였습니다." });
@@ -125,7 +125,7 @@ router.delete("/:_commentId", async (req, res) => {
     return res.send({ message: "댓글을 성공적으로 삭제하였습니다!" });
   } catch (err) {
     console.log(err);
-    if (err === BodyError) {
+    if (err.name === "BodyError") {
       return res.status(err.status).send({ message: err.message });
     } else
       return res.status(404).send({ message: "댓글 조회에 실패하였습니다." });
