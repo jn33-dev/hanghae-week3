@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
       title,
       content,
     });
-    return res.json({ message: "게시글을 생성하였습니다." });
+    return res.status(201).json({ message: "게시글을 생성하였습니다." });
   } catch (err) {
     console.log(err);
     return res
@@ -46,7 +46,6 @@ router.get("/", async (req, res) => {
     const data = await Posts.find({}, { password: false, content: false }).sort(
       { createdAt: -1 }
     );
-    console.log(data);
     let posts = [];
     data.forEach((e) => {
       posts.push({
@@ -56,7 +55,7 @@ router.get("/", async (req, res) => {
         createdAt: e["createdAt"],
       });
     });
-    return res.json({ data: posts });
+    return res.status(200).json({ data: posts });
   } catch (err) {
     console.log(err);
     if (!err.status) {
@@ -100,7 +99,7 @@ router.get("/:_postId", async (req, res) => {
     }
 
     // 게시글 상세조회 + 댓글 목록을 res로 쏴주기
-    return res.json({
+    return res.status(200).json({
       data: {
         postId: data["_id"],
         user: data["user"],
@@ -134,7 +133,7 @@ router.put("/:_postId", async (req, res) => {
       throw new CustomError("게시글 조회에 실패했습니다.", 404);
     }
 
-    return res.send({ message: "게시글을 수정하였습니다." });
+    return res.status(200).send({ message: "게시글을 수정하였습니다." });
   } catch (err) {
     console.log(err);
     if (!err.status) {
@@ -155,7 +154,7 @@ router.delete("/:_postId", async (req, res) => {
     });
     if (data === null)
       throw new CustomError("게시글 조회에 실패했습니다.", 404);
-    return res.send({ message: "게시글을 삭제하였습니다." });
+    return res.status(200).send({ message: "게시글을 삭제하였습니다." });
   } catch (err) {
     console.log(err);
     if (!err.status) {

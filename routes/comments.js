@@ -38,7 +38,7 @@ router.post("/:_postId", async (req, res) => {
       password,
       content,
     });
-    return res.json({ message: "댓글을  생성하였습니다." });
+    return res.status(201).json({ message: "댓글을  생성하였습니다." });
   } catch (err) {
     console.log(err);
     if (!err.status) {
@@ -123,7 +123,9 @@ router.delete("/:_commentId", async (req, res) => {
       password: { $eq: password },
     });
     if (data === null) throw new CustomError("댓글 조회에 실패했습니다.", 404);
-    return res.send({ message: "댓글을 성공적으로 삭제하였습니다!" });
+    return res
+      .status(200)
+      .send({ message: "댓글을 성공적으로 삭제하였습니다!" });
   } catch (err) {
     console.log(err);
     if (!err.status) {
