@@ -23,6 +23,4 @@ const postsSchema = new mongoose.Schema({
   },
 });
 
-console.log(postsSchema);
-
 module.exports = mongoose.model("Posts", postsSchema);
