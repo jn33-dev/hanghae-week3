@@ -5,6 +5,7 @@
 ##### 구현 기능
  - 게시글 포스팅 : POST domain/posts
  - 게시글 리스팅 : GET domain/posts
+ - 게시글 상세 조회 : GET domain/posts/:_postId  + 추가로 해당 게시글의 댓글도 함께 보여줌
  - 게시글 수정 : PUT domain/posts/:_postId
  - 게시글 삭제 : DELETE domain/posts/:_postId
  - 댓글 포스팅 : POST domain/comments/:_postId

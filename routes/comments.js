@@ -3,17 +3,17 @@ const router = express.Router();
 const Comments = require("../schemas/comment");
 const Posts = require("../schemas/post");
 
-class BodyError {
-  constructor() {
-    this.name = "BodyError";
-    this.message = "데이터 형식이 올바르지 않습니다.";
-    this.status = 400;
+class CustomError {
+  constructor(message, status) {
+    this.name = "CustomError";
+    this.message = message;
+    this.status = status;
   }
 }
 
 function isBody(req, res) {
   if (!Object.values(req.body).length || Object.values(req.body).includes("")) {
-    throw new BodyError();
+    throw new CustomError("데이터 형식이 올바르지 않습니다.", 400);
   }
   return;
 }
@@ -24,13 +24,11 @@ router.post("/:_postId", async (req, res) => {
     const { _postId } = req.params;
     const { user, password, content } = req.body;
     if (!content || !content.length)
-      return res.status(400).send({ message: "댓글 내용을 입력해주세요." });
+      throw new CustomError("댓글 내용을 입력해주세요.", 404);
     await isBody(req, res);
-    const post = await Posts.findOne({ _id: _postId });
+    const post = await Posts.findOne({ _id: { $eq: _postId } });
     if (post === null) {
-      return res
-        .status(404)
-        .send({ message: "유효한 게시글을 찾을 수 없습니다." });
+      throw new CustomError("게시글 조회에 실패했습니다.", 404);
     }
     const createdAt = new Date().toISOString();
     await Comments.create({
@@ -43,12 +41,11 @@ router.post("/:_postId", async (req, res) => {
     return res.json({ message: "댓글을  생성하였습니다." });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
+    if (!err.status) {
       return res
         .status(400)
         .send({ message: "데이터 형식이 올바르지 않습니다." });
+    } else return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -56,33 +53,34 @@ router.post("/:_postId", async (req, res) => {
 router.get("/:_postId", async (req, res) => {
   try {
     const { _postId } = req.params;
-    //??_postId로 Post data에서 포스트가 있는지 먼저 검증을 하는게 좋을지??
-    const post = await Posts.findOne({ _id: _postId });
-    if (post === null) {
-      return res
-        .status(404)
-        .send({ message: "유효한 게시글을 찾을 수 없습니다." });
-    }
-    const data = await Comments.find({ postId: _postId });
-    // postId에 해당하는 post가 있으므로, 해당 post에 comments가 없는 경우, 빈 배열 return
-    if (!data.length) {
-      return res
-        .status(404)
-        .send({ message: "입력하신 postId로 유효한 댓글을 찾을 수 없습니다." });
-    }
-
+    const post = await Posts.findOne({ _id: { $eq: _postId } });
+    if (post === null)
+      throw new CustomError("게시글 조회에 실패했습니다.", 404);
+    const comment = await Comments.find(
+      { postId: { $eq: _postId } },
+      { password: false }
+    ).sort({ createdAt: -1 });
     comments = [];
-    for (let c of data) {
-      const { _id, user, content, createdAt } = c;
-      comments.push({ commentId: _id, user, content, createdAt });
+    if (comment.length) {
+      comment.forEach((e) => {
+        comments.push({
+          postId: e["_id"],
+          user: e["user"],
+          content: e["content"],
+          createdAt: e["createdAt"],
+        });
+      });
+    } else {
+      comments.push("유효한 댓글 데이터가 없습니다.");
     }
-    comments.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
-    return res.json({ data: comments });
+    return res.status(200).json({ data: comments });
   } catch (err) {
     console.log(err);
-    return res
-      .status(400)
-      .send({ message: "데이터 형식이 올바르지 않습니다." });
+    if (!err.status) {
+      return res
+        .status(400)
+        .send({ message: "데이터 형식이 올바르지 않습니다." });
+    } else return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -92,21 +90,24 @@ router.put("/:_commentId", async (req, res) => {
     const { _commentId } = req.params;
     const { password, content } = req.body;
     if (!content || !content.length)
-      return res.status(400).send({ message: "댓글 내용을 입력해주세요." });
+      throw new CustomError("댓글 내용을 입력해주세요", 400);
     await isBody(req, res);
 
     const data = await Comments.findOneAndUpdate(
-      { _id: _commentId, password },
+      { _id: { $eq: _commentId }, password: { $eq: password } },
       { $set: { content } }
     );
-    if (data === null) throw new Error("입력값에 맞는 데이터가 없음");
-    return res.send({ message: "댓글을 성공적으로 수정하였습니다!" });
+    if (data === null) throw new CustomError("댓글 조회에 실패했습니다.", 404);
+    return res
+      .status(200)
+      .send({ message: "댓글을 성공적으로 수정하였습니다!" });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res.status(404).send({ message: "댓글 조회에 실패하였습니다." });
+    if (!err.status) {
+      return res
+        .status(400)
+        .send({ message: "데이터 형식이 올바르지 않습니다." });
+    } else return res.status(err.status).send({ message: err.message });
   }
 });
 
@@ -118,17 +119,18 @@ router.delete("/:_commentId", async (req, res) => {
     await isBody(req, res);
 
     const data = await Comments.findOneAndDelete({
-      _id: _commentId,
-      password: password,
+      _id: { $eq: _commentId },
+      password: { $eq: password },
     });
-    if (data === null) throw new Error("입력값에 맞는 데이터가 없음");
+    if (data === null) throw new CustomError("댓글 조회에 실패했습니다.", 404);
     return res.send({ message: "댓글을 성공적으로 삭제하였습니다!" });
   } catch (err) {
     console.log(err);
-    if (err.name === "BodyError") {
-      return res.status(err.status).send({ message: err.message });
-    } else
-      return res.status(404).send({ message: "댓글 조회에 실패하였습니다." });
+    if (!err.status) {
+      return res
+        .status(400)
+        .send({ message: "데이터 형식이 올바르지 않습니다." });
+    } else return res.status(err.status).send({ message: err.message });
   }
 });
 
